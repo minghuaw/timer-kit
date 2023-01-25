@@ -1,1 +1,7 @@
-/target
+**/target
+**/Cargo.lock
+.vscode/
+.DS_Store
+
+*flamegraph.svg
+*.env
