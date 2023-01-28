@@ -6,11 +6,14 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = []
+default = [
+    "tokio",
+    # "wasm-timer",
+]
 
 [dependencies]
 thiserror = "1.0"
-futures-core = "0.3"
+futures-util = "0.3"
 pin-project-lite = "0.2"
 slab = "0.4"
 

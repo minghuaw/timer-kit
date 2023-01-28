@@ -1,16 +1,16 @@
-use std::{pin::Pin, future::Future, time::{Duration, Instant}, task::{Poll}};
+use std::{pin::Pin, future::Future, time::{Duration}, task::{Poll}};
 
 use pin_project_lite::pin_project;
 
-use crate::{AsyncDelay, error::{Elapsed}};
+use crate::{Delay, error::{Elapsed}};
 
-pub fn timeout() {
-    todo!()
-}
+// pub fn timeout() {
+//     todo!()
+// }
 
-pub fn timeout_at() {
-    todo!()
-}
+// pub fn timeout_at() {
+//     todo!()
+// }
 
 pin_project! {
     pub struct Timeout<D, Fut> {
@@ -24,7 +24,7 @@ pin_project! {
 
 impl<D, Fut> Timeout<D, Fut>
 where
-    D: AsyncDelay + Unpin,
+    D: Delay + Unpin,
     Fut: Future,
 {
     pub fn new(duration: Duration, future: Fut) -> Self {
@@ -34,7 +34,7 @@ where
         }
     }
 
-    pub fn new_at(deadline: Instant, future: Fut) -> Self {
+    pub fn new_at(deadline: D::Instant, future: Fut) -> Self {
         Self {
             delay: D::delay_until(deadline),
             future,
@@ -44,7 +44,7 @@ where
 
 impl<D, Fut> Future for Timeout<D, Fut> 
 where
-    D: AsyncDelay + Unpin,
+    D: Delay + Unpin,
     Fut: Future,
 {
     type Output = Result<Fut::Output, Elapsed>;

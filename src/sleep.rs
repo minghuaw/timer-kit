@@ -1,57 +1,62 @@
-use std::{pin::Pin, time::{Duration, Instant}, future::Future};
+use std::{pin::Pin, time::{Duration}, future::Future};
 
-use crate::{AsyncDelay};
+use crate::{Delay, Instant};
 
-pub fn sleep() {
-    todo!()
-}
+// pub fn sleep<D>(duration: Duration) -> Sleep<D> 
+// where
+//     D: Delay + Unpin,
+// {
+//     Sleep::new(duration)
+// }
 
-pub fn sleep_until() {
-    todo!()
-}
+// pub fn sleep_until<D() {
+//     todo!()
+// }
 
 #[derive(Debug)]
-pub struct Sleep<D> {
-    delay: D,
-    deadline: Instant,
+pub struct Sleep<D: Delay> {
+    delay: Pin<Box<D>>,
+    deadline: D::Instant,
 }
 
 impl<D> Sleep<D>
 where
-    D: AsyncDelay + Unpin,
+    D: Delay + Unpin,
 {
-    pub fn new(duration: Duration) -> Self {
-        let delay = D::delay(duration);
-        let deadline = delay.deadline().unwrap_or(Instant::now() + duration);
+    pub fn new(duration: Duration) -> Self 
+    {
+        let delay = Box::pin(D::delay(duration));
+        let deadline = delay.deadline().unwrap_or(D::Instant::now() + duration);
         Self {
             delay,
             deadline,
         }
     }
 
-    pub fn new_until(deadline: Instant) -> Self {
+    pub fn new_until(deadline: D::Instant) -> Self {
         Self {
-            delay: D::delay_until(deadline),
+            delay: Box::pin(D::delay_until(deadline)),
             deadline,
         }
     }
 
-    pub fn reset(&mut self, deadline: Instant) {
-        self.delay.reset(deadline);
+    pub fn reset(&mut self, deadline: D::Instant) {
+        self.delay.as_mut().reset(deadline);
     }
 
-    pub fn deadline(&self) -> Instant {
+    pub fn deadline(&self) -> D::Instant {
         self.deadline
     }
 }
 
 impl<D> Future for Sleep<D>
 where
-    D: AsyncDelay + Unpin,
+    D: Delay + Unpin,
+    D::Instant: Unpin,
 {
     type Output = D::Value;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
-        self.get_mut().delay.poll_elapsed(cx)
+        self.get_mut().delay.as_mut().poll_elapsed(cx)
     }
 }

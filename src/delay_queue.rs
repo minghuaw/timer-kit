@@ -4,7 +4,7 @@
 //!
 //! [`DelayQueue`]: struct@DelayQueue
 
-use futures_core::ready;
+use futures_util::ready;
 
 use core::ops::{Index, IndexMut};
 use slab::Slab;
@@ -19,7 +19,7 @@ use std::pin::Pin;
 use std::task::{self, Poll, Waker};
 
 use crate::wheel::{self, Wheel};
-use crate::{Duration, Instant, Sleep, AsyncDelay};
+use crate::{Duration, Instant, Sleep, Delay};
 
 /// A queue of delayed elements.
 ///
@@ -129,7 +129,7 @@ use crate::{Duration, Instant, Sleep, AsyncDelay};
 /// [`capacity`]: method@Self::capacity
 /// [`reserve`]: method@Self::reserve
 #[derive(Debug)]
-pub struct DelayQueue<D, T> {
+pub struct DelayQueue<D: Delay, T> {
     /// Stores data associated with entries
     slab: SlabStorage<T>,
 
@@ -147,7 +147,7 @@ pub struct DelayQueue<D, T> {
     wheel_now: u64,
 
     /// Instant at which the timer starts
-    start: Instant,
+    start: D::Instant,
 
     /// Waker that is invoked when we potentially need to reset the timer.
     /// Because we lazily create the timer when the first entry is created, we
@@ -371,12 +371,12 @@ impl<T> IndexMut<Key> for SlabStorage<T> {
 ///
 /// [`DelayQueue::poll_expired`]: method@DelayQueue::poll_expired
 #[derive(Debug)]
-pub struct Expired<T> {
+pub struct Expired<T, I: Instant> {
     /// The data stored in the queue
     data: T,
 
     /// The expiration time
-    deadline: Instant,
+    deadline: I,
 
     /// The key associated with the entry
     key: Key,
@@ -433,7 +433,8 @@ const MAX_ENTRIES: usize = (1 << 30) - 1;
 
 impl<D, T> DelayQueue<D, T> 
 where
-    D: AsyncDelay + Unpin,
+    D: Delay + Unpin,
+    D::Instant: Unpin,
 {
     /// Creates a new, empty, `DelayQueue`.
     ///
@@ -535,7 +536,7 @@ where
     /// [`Key`]: struct@Key
     /// [type]: #
     #[track_caller]
-    pub fn insert_at(&mut self, value: T, when: Instant) -> Key {
+    pub fn insert_at(&mut self, value: T, when: D::Instant) -> Key {
         assert!(self.slab.len() < MAX_ENTRIES, "max entries exceeded");
 
         // Normalize the deadline. Values cannot be set to expire in the past.
@@ -580,7 +581,7 @@ where
     /// Attempts to pull out the next value of the delay queue, registering the
     /// current task for wakeup if the value is not yet available, and returning
     /// `None` if the queue is exhausted.
-    pub fn poll_expired(&mut self, cx: &mut task::Context<'_>) -> Poll<Option<Expired<T>>> {
+    pub fn poll_expired(&mut self, cx: &mut task::Context<'_>) -> Poll<Option<Expired<T, D::Instant>>> {
         if !self
             .waker
             .as_ref()
@@ -656,7 +657,7 @@ where
     /// [type]: #
     #[track_caller]
     pub fn insert(&mut self, value: T, timeout: Duration) -> Key {
-        self.insert_at(value, Instant::now() + timeout)
+        self.insert_at(value, D::Instant::now() + timeout)
     }
 
     #[track_caller]
@@ -722,7 +723,7 @@ where
     /// # }
     /// ```
     #[track_caller]
-    pub fn remove(&mut self, key: &Key) -> Expired<T> {
+    pub fn remove(&mut self, key: &Key) -> Expired<T, D::Instant> {
         let prev_deadline = self.next_deadline();
 
         self.remove_key(key);
@@ -773,7 +774,7 @@ where
     /// assert!(item.is_none());
     /// # }
     /// ```
-    pub fn try_remove(&mut self, key: &Key) -> Option<Expired<T>> {
+    pub fn try_remove(&mut self, key: &Key) -> Option<Expired<T, D::Instant>> {
         if self.slab.contains(key) {
             Some(self.remove(key))
         } else {
@@ -816,7 +817,7 @@ where
     /// # }
     /// ```
     #[track_caller]
-    pub fn reset_at(&mut self, key: &Key, when: Instant) {
+    pub fn reset_at(&mut self, key: &Key, when: D::Instant) {
         self.remove_key(key);
 
         // Normalize the deadline. Values cannot be set to expire in the past.
@@ -879,7 +880,7 @@ where
     }
 
     /// Returns the next time to poll as determined by the wheel
-    fn next_deadline(&mut self) -> Option<Instant> {
+    fn next_deadline(&mut self) -> Option<D::Instant> {
         self.wheel
             .poll_at()
             .map(|poll_at| self.start + Duration::from_millis(poll_at))
@@ -922,7 +923,7 @@ where
     /// ```
     #[track_caller]
     pub fn reset(&mut self, key: &Key, timeout: Duration) {
-        self.reset_at(key, Instant::now() + timeout);
+        self.reset_at(key, D::Instant::now() + timeout);
     }
 
     /// Clears the queue, removing all items.
@@ -1095,7 +1096,7 @@ where
         }
     }
 
-    fn normalize_deadline(&self, when: Instant) -> u64 {
+    fn normalize_deadline(&self, when: D::Instant) -> u64 {
         let when = if when < self.start {
             0
         } else {
@@ -1107,24 +1108,26 @@ where
 }
 
 // We never put `T` in a `Pin`...
-impl<D, T> Unpin for DelayQueue<D, T> where D: Unpin {}
+impl<D, T> Unpin for DelayQueue<D, T> where D: Delay + Unpin {}
 
 impl<D, T> Default for DelayQueue<D, T> 
 where
-    D: AsyncDelay + Unpin,
+    D: Delay + Unpin,
+    D::Instant: Unpin,
 {
     fn default() -> DelayQueue<D, T> {
         DelayQueue::new()
     }
 }
 
-impl<D, T> futures_core::Stream for DelayQueue<D, T> 
+impl<D, T> futures_util::Stream for DelayQueue<D, T> 
 where
-    D: AsyncDelay + Unpin,
+    D: Delay + Unpin,
+    D::Instant: Unpin,
 {
     // DelayQueue seems much more specific, where a user may care that it
     // has reached capacity, so return those errors instead of panicking.
-    type Item = Expired<T>;
+    type Item = Expired<T, D::Instant>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Option<Self::Item>> {
         DelayQueue::poll_expired(self.get_mut(), cx)
@@ -1250,7 +1253,7 @@ impl From<KeyInternal> for Key {
     }
 }
 
-impl<T> Expired<T> {
+impl<T, I: Instant> Expired<T, I> {
     /// Returns a reference to the inner value.
     pub fn get_ref(&self) -> &T {
         &self.data
@@ -1267,7 +1270,7 @@ impl<T> Expired<T> {
     }
 
     /// Returns the deadline that the expiration was set to.
-    pub fn deadline(&self) -> Instant {
+    pub fn deadline(&self) -> I {
         self.deadline
     }
 

@@ -1,10 +1,10 @@
-use std::{pin::Pin, time::{Duration, Instant}, task::{Context, Poll}, task::ready, future::poll_fn};
+use std::{pin::Pin, time::{Duration}, task::{Context, Poll}, task::ready, future::poll_fn};
 
-use crate::{AsyncDelay};
+use crate::{Delay};
 
-pub fn interval() {
-    todo!()
-}
+// pub fn interval() {
+//     todo!()
+// }
 
 pub struct Interval<D> {
     delay: Pin<Box<D>>,
@@ -13,7 +13,7 @@ pub struct Interval<D> {
 
 impl<D> Interval<D>
 where
-    D: AsyncDelay + Unpin,
+    D: Delay + Unpin,
 {
     pub fn new(period: Duration) -> Self {
         Self {
@@ -27,9 +27,11 @@ where
     }
 
     pub fn poll_tick(&mut self, cx: &mut Context<'_>) -> Poll<D::Value> {
-        let value = ready!(self.delay.poll_elapsed(cx));
-        let next = Instant::now() + self.period;
-        self.delay.reset(next);
+        use crate::Instant;
+
+        let value = ready!(self.delay.as_mut().poll_elapsed(cx));
+        let next = D::Instant::now() + self.period;
+        self.delay.as_mut().reset(next);
         Poll::Ready(value)
     }
 
@@ -38,7 +40,9 @@ where
     }
 
     pub fn reset(&mut self) {
-        let deadline = Instant::now() + self.period;
-        self.delay.reset(deadline);
+        use crate::Instant;
+
+        let deadline = D::Instant::now() + self.period;
+        self.delay.as_mut().reset(deadline);
     }
 }
