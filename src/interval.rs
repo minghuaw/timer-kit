@@ -1,10 +1,22 @@
 use std::{pin::Pin, time::{Duration}, task::{Context, Poll}, task::ready, future::poll_fn};
 
+use futures_util::Stream;
+
 use crate::{Delay};
 
-// pub fn interval() {
-//     todo!()
-// }
+pub fn interval<D>(duration: Duration) -> Interval<D> 
+where
+    D: Delay + Unpin,
+{
+    Interval::new(duration)
+}
+
+pub fn interval_at<D>(start: D::Instant, duration: Duration) -> Interval<D> 
+where
+    D: Delay + Unpin,
+{
+    Interval::new_at(start, duration)
+}
 
 pub struct Interval<D> {
     delay: Pin<Box<D>>,
@@ -18,6 +30,13 @@ where
     pub fn new(period: Duration) -> Self {
         Self {
             delay: Box::pin(D::delay(period)),
+            period,
+        }
+    }
+
+    pub fn new_at(start: D::Instant, period: Duration) -> Self {
+        Self {
+            delay: Box::pin(D::delay_until(start)),
             period,
         }
     }
@@ -46,3 +65,15 @@ where
         self.delay.as_mut().reset(deadline);
     }
 }
+
+impl<D> Stream for Interval<D>
+where
+    D: Delay + Unpin,
+{
+    type Item = D::Value;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let value = ready!(self.get_mut().poll_tick(cx));
+        Poll::Ready(Some(value))
+    }
+} 

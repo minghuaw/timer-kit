@@ -4,13 +4,21 @@ use pin_project_lite::pin_project;
 
 use crate::{Delay, error::{Elapsed}};
 
-// pub fn timeout() {
-//     todo!()
-// }
+pub fn timeout<D, Fut>(duration: Duration, fut: Fut) -> Timeout<D, Fut> 
+where
+    D: Delay + Unpin,
+    Fut: Future,
+{
+    Timeout::new(duration, fut)
+}
 
-// pub fn timeout_at() {
-//     todo!()
-// }
+pub fn timeout_at<D, Fut>(deadline: D::Instant, fut: Fut) -> Timeout<D, Fut> 
+where
+    D: Delay + Unpin,
+    Fut: Future,
+{
+    Timeout::new_at(deadline, fut)
+}
 
 pin_project! {
     pub struct Timeout<D, Fut> {
