@@ -41,6 +41,7 @@ where
     }
 
     pub fn reset(&mut self, deadline: D::Instant) {
+        self.deadline = deadline;
         self.delay.as_mut().reset(deadline);
     }
 
