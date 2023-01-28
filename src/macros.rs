@@ -18,10 +18,10 @@ macro_rules! cfg_not_wasm32 {
     }
 }
 
-macro_rules! cfg_futures_timer {
+macro_rules! cfg_smol {
     ($($item:item)*) => {
         $(
-            #[cfg(feature = "futures-timer")]
+            #[cfg(feature = "smol")]
             $item
         )*
     };

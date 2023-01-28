@@ -3,8 +3,8 @@ cfg_not_wasm32! {
         mod tokio;
     }
 
-    cfg_futures_timer! {
-        mod futures_timer;
+    cfg_smol! {
+        mod smol;
     }
 }
 
