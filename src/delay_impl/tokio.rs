@@ -1,7 +1,5 @@
 use std::{pin::Pin};
 
-use futures_util::Future;
-
 use tokio::time::{Sleep, Instant};
 
 impl crate::Delay for Sleep {
@@ -21,7 +19,7 @@ impl crate::Delay for Sleep {
     }
 
     fn poll_elapsed(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Value> {
-        self.poll(cx)
+        std::future::Future::poll(self, cx)
     }
 
     fn reset(self: Pin<&mut Self>, deadline: Instant) {

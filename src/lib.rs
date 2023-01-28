@@ -60,12 +60,4 @@ where
         + Ord,
 {
     fn now() -> Self;
-
-    fn duration_since(&self, other: Self) -> std::time::Duration;
-
-    fn checked_add(&self, duration: Duration) -> Option<Self>;
-
-    fn checked_sub(&self, duration: Duration) -> Option<Self>;
-
-    fn checked_duration_since(&self, other: Self) -> Option<Duration>;
 }
