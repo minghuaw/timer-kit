@@ -20,8 +20,8 @@ slab = "0.4"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 # Optional dependencies
-tokio = { version = "1.0", features = ["time"], optional = true }
-smol = { version = "1.2", optional = true }
+tokio = { version = "1", features = ["time"], optional = true }
+smol = { version = "1", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 # Optional dependencies
