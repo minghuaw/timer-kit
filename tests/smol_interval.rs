@@ -1,32 +1,32 @@
 #[macro_use]
 mod macros;
 
-cfg_smol! {
-    mod util;
+mod util;
 
+cfg_smol! {
     #[smol_potat::test]
     #[should_panic]
     async fn interval_zero_duration() {
-        util::interval_zero_duration::<smol::Timer>().await;
+        util::interval::interval_zero_duration::<smol::Timer>().await;
     }
 
     #[smol_potat::test]
     async fn burst() {
-        util::burst::<smol::Timer>().await;
+        util::interval::burst::<smol::Timer>().await;
     }
 
     #[smol_potat::test]
     async fn delay() {
-        util::delay::<smol::Timer>().await;
+        util::interval::delay::<smol::Timer>().await;
     }
 
     #[smol_potat::test]
     async fn skip() {
-        util::skip::<smol::Timer>().await;
+        util::interval::skip::<smol::Timer>().await;
     }
 
     #[smol_potat::test]
     async fn reset() {
-        util::reset::<smol::Timer>().await;
+        util::interval::reset::<smol::Timer>().await;
     }
 }

@@ -1,16 +1,21 @@
 #[macro_use]
 mod macros;
 
-cfg_tokio! {
-    mod util;
+mod util;
 
+cfg_tokio! {
     #[tokio::test]
     async fn immediate_sleep() {
-        util::immediate_sleep::<tokio::time::Sleep>().await;
+        util::sleep::immediate_sleep::<tokio::time::Sleep>().await;
     }
 
     #[tokio::test]
     async fn short_sleep() {
-        util::short_sleep::<tokio::time::Sleep>().await;
+        util::sleep::short_sleep::<tokio::time::Sleep>().await;
+    }
+
+    #[tokio::test]
+    async fn reset() {
+        util::sleep::reset::<tokio::time::Sleep>().await;
     }
 }
