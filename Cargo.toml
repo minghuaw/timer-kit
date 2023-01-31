@@ -5,6 +5,9 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+doctest = false # TODO: enable doctests
+
 [features]
 default = [
     # "tokio",
@@ -23,6 +26,14 @@ slab = "0.4"
 tokio = { version = "1", features = ["time"], optional = true }
 smol = { version = "1", optional = true }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+tokio = { version = "1", features = ["time", "rt", "macros"]}
+smol = { version = "1"}
+smol-potat = { version = "1", features = ["auto"] }
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 # Optional dependencies
 wasm-timer = { version = "0.2", optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-timer = { version = "0.2" }

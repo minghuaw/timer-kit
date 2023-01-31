@@ -6,7 +6,7 @@ use crate::{Delay, error::{Elapsed}};
 
 pub fn timeout<D, Fut>(duration: Duration, fut: Fut) -> Timeout<D, Fut> 
 where
-    D: Delay + Unpin,
+    D: Delay,
     Fut: Future,
 {
     Timeout::new(duration, fut)
@@ -14,7 +14,7 @@ where
 
 pub fn timeout_at<D, Fut>(deadline: D::Instant, fut: Fut) -> Timeout<D, Fut> 
 where
-    D: Delay + Unpin,
+    D: Delay,
     Fut: Future,
 {
     Timeout::new_at(deadline, fut)
@@ -32,7 +32,7 @@ pin_project! {
 
 impl<D, Fut> Timeout<D, Fut>
 where
-    D: Delay + Unpin,
+    D: Delay,
     Fut: Future,
 {
     pub fn new(duration: Duration, future: Fut) -> Self {
@@ -52,7 +52,7 @@ where
 
 impl<D, Fut> Future for Timeout<D, Fut> 
 where
-    D: Delay + Unpin,
+    D: Delay,
     Fut: Future,
 {
     type Output = Result<Fut::Output, Elapsed>;

@@ -433,7 +433,7 @@ const MAX_ENTRIES: usize = (1 << 30) - 1;
 
 impl<D, T> DelayQueue<D, T> 
 where
-    D: Delay + Unpin,
+    D: Delay,
     D::Instant: Unpin,
 {
     /// Creates a new, empty, `DelayQueue`.
@@ -1108,11 +1108,11 @@ where
 }
 
 // We never put `T` in a `Pin`...
-impl<D, T> Unpin for DelayQueue<D, T> where D: Delay + Unpin {}
+impl<D, T> Unpin for DelayQueue<D, T> where D: Delay {}
 
 impl<D, T> Default for DelayQueue<D, T> 
 where
-    D: Delay + Unpin,
+    D: Delay,
     D::Instant: Unpin,
 {
     fn default() -> DelayQueue<D, T> {
@@ -1122,7 +1122,7 @@ where
 
 impl<D, T> futures_util::Stream for DelayQueue<D, T> 
 where
-    D: Delay + Unpin,
+    D: Delay,
     D::Instant: Unpin,
 {
     // DelayQueue seems much more specific, where a user may care that it

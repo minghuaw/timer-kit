@@ -2,16 +2,19 @@ use std::{pin::Pin, time::{Duration}, future::Future};
 
 use crate::{Delay, Instant};
 
-// pub fn sleep<D>(duration: Duration) -> Sleep<D> 
-// where
-//     D: Delay + Unpin,
-// {
-//     Sleep::new(duration)
-// }
+pub fn sleep<D>(duration: Duration) -> Sleep<D> 
+where
+    D: Delay,
+{
+    Sleep::new(duration)
+}
 
-// pub fn sleep_until<D() {
-//     todo!()
-// }
+pub fn sleep_until<D>(deadline: D::Instant) -> Sleep<D> 
+where
+    D: Delay,
+{
+    Sleep::new_until(deadline)
+}
 
 #[derive(Debug)]
 pub struct Sleep<D: Delay> {
@@ -21,7 +24,7 @@ pub struct Sleep<D: Delay> {
 
 impl<D> Sleep<D>
 where
-    D: Delay + Unpin,
+    D: Delay,
 {
     pub fn new(duration: Duration) -> Self 
     {
@@ -52,7 +55,7 @@ where
 
 impl<D> Future for Sleep<D>
 where
-    D: Delay + Unpin,
+    D: Delay,
     D::Instant: Unpin,
 {
     type Output = D::Value;
