@@ -173,6 +173,28 @@ where
     assert!(now - deadline < Duration::from_millis(10));
 }
 
+pub async fn short_sleep<D>() 
+where
+    D: Delay,
+    D::Instant: Unpin,
+{
+    let deadline = D::Instant::now() + Duration::from_millis(100);
+    timer_kit::sleep_until::<D>(deadline).await;
+    let now = D::Instant::now();
+    assert!(now - deadline < Duration::from_millis(10));
+}
+
+// pub async fn long_sleep<D>() 
+// where
+//     D: Delay,
+//     D::Instant: Unpin,
+// {
+//     let deadline = D::Instant::now() + Duration::from_millis(10_000);
+//     timer_kit::sleep_until::<D>(deadline).await;
+//     let now = D::Instant::now();
+//     assert!(now - deadline < Duration::from_millis(10));
+// }
+
 // =============================================================================
 // Timeout tests
 // =============================================================================
