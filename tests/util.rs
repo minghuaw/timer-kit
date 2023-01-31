@@ -1,7 +1,13 @@
+#![allow(dead_code)]
+
 use std::time::Duration;
 use futures_util::{poll, pin_mut, future::poll_fn};
 
 use timer_kit::{Delay, Instant};
+
+// =============================================================================
+// Interval tests
+// =============================================================================
 
 macro_rules! assert_interval_poll_ready {
     ($interval:ident) => {
@@ -151,3 +157,26 @@ where
     timer_kit::sleep::<D>(Duration::from_millis(300)).await;
     assert_interval_poll_ready!(interval);
 }
+
+// =============================================================================
+// Sleep tests
+// =============================================================================
+
+pub async fn immediate_sleep<D>()
+where
+    D: Delay,
+    D::Instant: Unpin,
+{
+    let deadline = D::Instant::now();
+    timer_kit::sleep_until::<D>(deadline).await;
+    let now = D::Instant::now();
+    assert!(now - deadline < Duration::from_millis(10));
+}
+
+// =============================================================================
+// Timeout tests
+// =============================================================================
+
+// =============================================================================
+// DelayQueue tests
+// =============================================================================

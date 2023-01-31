@@ -26,7 +26,7 @@ impl<D> Sleep<D>
 where
     D: Delay,
 {
-    pub fn new(duration: Duration) -> Self 
+    pub(crate) fn new(duration: Duration) -> Self 
     {
         let delay = Box::pin(D::delay(duration));
         let deadline = delay.deadline().unwrap_or(D::Instant::now() + duration);
@@ -36,7 +36,7 @@ where
         }
     }
 
-    pub fn new_until(deadline: D::Instant) -> Self {
+    pub(crate) fn new_until(deadline: D::Instant) -> Self {
         Self {
             delay: Box::pin(D::delay_until(deadline)),
             deadline,
