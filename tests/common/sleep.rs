@@ -48,7 +48,7 @@ where
     let deadline = D::Instant::now() + Duration::from_millis(100);
     let mut sleep = timer_kit::sleep_until::<D>(deadline);
     timer_kit::sleep::<D>(Duration::from_millis(50)).await;
-    assert_pending!(sleep);
+    assert_pending!(&mut sleep);
 
     // Reset by 100ms
     let new_deadline = D::Instant::now() + Duration::from_millis(100);
@@ -56,7 +56,7 @@ where
 
     // Should return pending at the original deadline
     timer_kit::sleep::<D>(Duration::from_millis(50)).await;
-    assert_pending!(sleep);
+    assert_pending!(&mut sleep);
 
     // Should return ready at the new deadline
     timer_kit::sleep::<D>(Duration::from_millis(50)).await;

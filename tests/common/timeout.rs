@@ -34,9 +34,9 @@ where
     let timeout = timer_kit::timeout_at::<D, _>(D::Instant::now() + Duration::from_millis(100), rx);
     let mut timeout = Box::pin(timeout); // This is only needed for the assert_pending! macro
 
-    assert_pending!(timeout);
+    assert_pending!(&mut timeout);
     timer_kit::sleep::<D>(Duration::from_millis(50)).await;
-    assert_pending!(timeout);
+    assert_pending!(&mut timeout);
 
     tx.send(()).unwrap();
     assert_ready_ok!(timeout);
