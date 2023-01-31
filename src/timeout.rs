@@ -30,6 +30,8 @@ pin_project! {
     }
 }
 
+/// TODO: document that this is not able to avoid exhaustion if the future 
+/// never completes and never returns `Pending`
 impl<D, Fut> Timeout<D, Fut>
 where
     D: Delay,

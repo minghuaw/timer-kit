@@ -21,13 +21,16 @@ futures-util = "0.3"
 pin-project-lite = "0.2"
 slab = "0.4"
 
+[dev-dependencies]
+futures = "0.3"
+
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 # Optional dependencies
 tokio = { version = "1", features = ["time"], optional = true }
 smol = { version = "1", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-tokio = { version = "1", features = ["time", "rt", "macros"]}
+tokio = { version = "1", features = ["time", "rt", "macros", "io-util"]}
 smol = { version = "1"}
 smol-potat = { version = "1", features = ["auto"] }
 
