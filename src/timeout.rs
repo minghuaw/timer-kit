@@ -35,14 +35,14 @@ where
     D: Delay,
     Fut: Future,
 {
-    pub(crate) fn new(duration: Duration, future: Fut) -> Self {
+    pub fn new(duration: Duration, future: Fut) -> Self {
         Self {
             delay: D::delay(duration),
             future,
         }
     }
 
-    pub(crate) fn new_at(deadline: D::Instant, future: Fut) -> Self {
+    pub fn new_at(deadline: D::Instant, future: Fut) -> Self {
         Self {
             delay: D::delay_until(deadline),
             future,

@@ -76,7 +76,7 @@ where
     D: Delay,
     D::Instant: Unpin,
 {
-    pub(crate) fn new(period: Duration) -> Self {
+    pub fn new(period: Duration) -> Self {
         assert!(period > Duration::new(0, 0), "period must be non-zero");
         Self {
             delay: Box::pin(Sleep::new(period)),
@@ -85,7 +85,7 @@ where
         }
     }
 
-    pub(crate) fn new_at(start: D::Instant, period: Duration) -> Self {
+    pub fn new_at(start: D::Instant, period: Duration) -> Self {
         assert!(period > Duration::new(0, 0), "period must be non-zero");
         Self {
             delay: Box::pin(Sleep::new_until(start)),
