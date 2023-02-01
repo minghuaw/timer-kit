@@ -6,6 +6,41 @@ use crate::{Delay, Sleep};
 
 const BUFFER_TIMEOUT: Duration = Duration::from_millis(5);
 
+/// Creates new [`Interval`] that yields with interval of period. The first tick completes
+/// immediately. The default [`MissedTickBehavior`] is [`MissedTickBehavior::Burst`], but this
+/// can be configured by calling [`Interval::set_missed_tick_behavior`].
+/// 
+/// # Panics
+/// 
+/// This function will panic if `period` is zero.
+/// 
+/// # Example
+/// 
+/// Creates an interval with smol's timer
+/// 
+/// ```rust,no_run
+/// use std::time::Duration;
+/// use timer_kit::interval;
+/// 
+/// let mut interval = interval::<smol::Timer>(Duration::from_millis(100));
+/// 
+/// interval.tick().await;
+/// interval.tick().await;
+/// interval.tick().await;
+/// ```
+/// 
+/// Creates an interval with `fluvio_wasm_timer::Delay`
+/// 
+/// ```rust,no_run
+/// use std::time::Duration;
+/// use timer_kit::interval;
+/// 
+/// let mut interval = interval::<fluvio_wasm_timer::Delay>(Duration::from_millis(100));
+/// 
+/// interval.tick().await;
+/// interval.tick().await;
+/// interval.tick().await;
+/// ```
 pub fn interval<D>(duration: Duration) -> Interval<D> 
 where
     D: Delay,
@@ -14,6 +49,42 @@ where
     Interval::new(duration)
 }
 
+/// Creates new [`Interval`] that yields with interval of period with the first tick completing
+/// at start. The default [`MissedTickBehavior`] is [`MissedTickBehavior::Burst`], but this can
+/// be configured by calling [`Interval::set_missed_tick_behavior`].
+/// 
+/// # Panics
+/// 
+/// This function will panic if `period` is zero.
+/// 
+/// # Example
+/// 
+/// Creates an interval with smol's timer
+/// 
+/// ```rust,no_run
+/// use std::time::{Duration, Instant};
+/// use timer_kit::interval_at;
+/// 
+/// let mut interval = interval_at::<smol::Timer>(Instant::now(), Duration::from_millis(100));
+/// 
+/// interval.tick().await;
+/// interval.tick().await;
+/// interval.tick().await;
+/// ```
+/// 
+/// Creates an interval with `fluvio_wasm_timer::Delay`
+/// 
+/// ```rust,no_run
+/// use std::time::{Duration};
+/// use fluvio_wasm_timer::Instant;
+/// use timer_kit::interval_at;
+/// 
+/// let mut interval = interval_at::<fluvio_wasm_timer::Delay>(Instant::now(), Duration::from_millis(100));
+/// 
+/// interval.tick().await;
+/// interval.tick().await;
+/// interval.tick().await;
+/// ```
 pub fn interval_at<D>(start: D::Instant, duration: Duration) -> Interval<D> 
 where
     D: Delay,
@@ -22,7 +93,7 @@ where
     Interval::new_at(start, duration)
 }
 
-/// Copied from `tokio::time::interval`
+/// Ported from [`tokio::time::interval::MissedTickBehavior`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MissedTickBehavior {
     Burst,
@@ -65,6 +136,12 @@ impl Default for MissedTickBehavior {
     }
 }
 
+/// An [`Interval`] allows you to wait on a sequence of instants with a certain duration between
+/// each instant. 
+/// 
+/// # Type Parameter
+/// 
+/// - `D`: The underlying timer type that implements the [`Delay`] trait
 pub struct Interval<D: Delay> {
     delay: Pin<Box<Sleep<D>>>,
     missed_tick_behavior: MissedTickBehavior,
@@ -76,6 +153,42 @@ where
     D: Delay,
     D::Instant: Unpin,
 {
+    /// Creates new [`Interval`] that yields with interval of period. The first tick completes
+    /// immediately. The default [`MissedTickBehavior`] is [`MissedTickBehavior::Burst`], but this
+    /// can be configured by calling [`Interval::set_missed_tick_behavior`].
+    /// 
+    /// # Panics
+    /// 
+    /// This function will panic if `period` is zero.
+    /// 
+    /// # Examples
+    /// 
+    /// Creates a new [`Interval`] that yields every 100 milliseconds with smol's timer.
+    /// 
+    /// ```rust,no_run
+    /// use std::time::Duration;
+    /// use timer_kit::Interval;
+    /// 
+    /// let mut interval = Interval::<smol::Timer>::new(Duration::from_millis(100));
+    /// 
+    /// interval.tick().await;
+    /// interval.tick().await;
+    /// interval.tick().await;
+    /// ```
+    /// 
+    /// Creates a new [`Interval`] that yields every 100 milliseconds with
+    /// `fluvio_wasm_timer::Delay`.
+    /// 
+    /// ```rust,no_run
+    /// use std::time::Duration;
+    /// use timer_kit::Interval;
+    /// 
+    /// let mut interval = Interval::<fluvio_wasm_timer::Delay>::new(Duration::from_millis(100));
+    /// 
+    /// interval.tick().await;
+    /// interval.tick().await;
+    /// interval.tick().await;
+    /// ```
     pub fn new(period: Duration) -> Self {
         assert!(period > Duration::new(0, 0), "period must be non-zero");
         Self {
@@ -85,6 +198,43 @@ where
         }
     }
 
+    /// Creates new [`Interval`] that yields with interval of period with the first tick completing
+    /// at start. The default [`MissedTickBehavior`] is [`MissedTickBehavior::Burst`], but this can
+    /// be configured by calling [`Interval::set_missed_tick_behavior`].
+    /// 
+    /// # Panics
+    /// 
+    /// This function will panic if `period` is zero.
+    /// 
+    /// # Examples
+    /// 
+    /// Creates a new [`Interval`] that yields every 100 milliseconds with smol's timer.
+    /// 
+    /// ```rust,no_run
+    /// use std::time::{Duration, Instant};
+    /// use timer_kit::Interval;
+    /// 
+    /// let mut interval = Interval::<smol::Timer>::new_at(Instant::now(), Duration::from_millis(100));
+    /// 
+    /// interval.tick().await;
+    /// interval.tick().await;
+    /// interval.tick().await;
+    /// ```
+    /// 
+    /// Creates a new [`Interval`] that yields every 100 milliseconds with
+    /// `fluvio_wasm_timer::Delay`.
+    /// 
+    /// ```rust,no_run
+    /// use std::time::Duration;
+    /// use fluvio_wasm_timer::Instant;
+    /// use timer_kit::Interval;
+    /// 
+    /// let mut interval = Interval::<fluvio_wasm_timer::Delay>::new_at(Instant::now(), Duration::from_millis(100));
+    /// 
+    /// interval.tick().await;
+    /// interval.tick().await;
+    /// interval.tick().await;
+    /// ```
     pub fn new_at(start: D::Instant, period: Duration) -> Self {
         assert!(period > Duration::new(0, 0), "period must be non-zero");
         Self {
