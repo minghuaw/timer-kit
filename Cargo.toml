@@ -2,8 +2,19 @@
 name = "timer-kit"
 version = "0.1.0"
 edition = "2021"
+description = "A timer toolkit that is generic over the underlying timer implementation."
+license = "MIT/Apache-2.0"
+documentation = "https://docs.rs/timer-kit/"
+homepage = "https://github.com/minghuaw/timer-kit"
+repository = "https://github.com/minghuaw/timer-kit"
+keywords = ["sleep", "timeout", "interval", "delay", "async"]
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = [

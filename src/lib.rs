@@ -3,9 +3,9 @@
 //! This crate does not implement any platform-specific timer but uses a generic abstraction over
 //! the timer implementation to provide a set of timer related tools:
 //! 
-//! 1. [`sleep`]/[`Sleep`]
-//! 2. [`timeout`]/[`Timeout`]
-//! 3. [`interval`]/[`Interval`]
+//! 1. [`sleep()`]/[`Sleep`]
+//! 2. [`timeout()`]/[`Timeout`]
+//! 3. [`interval()`]/[`Interval`]
 //! 4. [`DelayQueue`]
 //! 
 //! This crate currently does not provide any feature beyond the ones that is already provided by
