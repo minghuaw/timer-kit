@@ -2,6 +2,27 @@ use std::{pin::Pin, time::{Duration}, future::Future};
 
 use crate::{Delay, Instant};
 
+/// Creates a new `Sleep` that completes after the specified duration.
+/// 
+/// # Example
+/// 
+/// Creates a sleep with tokio's timer
+/// 
+/// ```rust,no_run
+/// use std::time::Duration;
+/// use timer_kit::sleep;
+/// 
+/// sleep::<tokio::time::Sleep>(Duration::from_millis(100)).await;
+/// ```
+/// 
+/// Creates a sleep with futures_timer's timer
+/// 
+/// ```rust,no_run
+/// use std::time::Duration;
+/// use timer_kit::sleep;
+/// 
+/// sleep::<futures_timer::Delay>(Duration::from_millis(100)).await;
+/// ```
 pub fn sleep<D>(duration: Duration) -> Sleep<D> 
 where
     D: Delay,
@@ -9,6 +30,28 @@ where
     Sleep::new(duration)
 }
 
+/// Creates a new `Sleep` that completes at the specified deadline
+/// 
+/// # Example
+/// 
+/// Creates a sleep with tokio's timer
+/// 
+/// ```rust,no_run
+/// use std::time::Duration;
+/// use tokio::time::Instant;
+/// use timer_kit::sleep_until;
+/// 
+/// sleep_until::<tokio::time::Sleep>(Instant::now() + Duration::from_millis(100)).await;
+/// ```
+/// 
+/// Creates a sleep with futures_timer's timer
+/// 
+/// ```rust,no_run
+/// use std::time::{Duration, Instant};
+/// use timer_kit::sleep_until;
+/// 
+/// sleep_until::<futures_timer::Delay>(Instant::now() + Duration::from_millis(100)).await;
+/// ```
 pub fn sleep_until<D>(deadline: D::Instant) -> Sleep<D> 
 where
     D: Delay,
@@ -16,6 +59,13 @@ where
     Sleep::new_until(deadline)
 }
 
+/// A future that completes after a specified duration.
+/// 
+/// This future calls `Delay::poll_elapsed` internally.
+/// 
+/// # Type Parameter
+/// 
+/// - `D`: The underlying timer type that implements the [`Delay`] trait
 #[derive(Debug)]
 pub struct Sleep<D: Delay> {
     delay: Pin<Box<D>>,
@@ -26,6 +76,29 @@ impl<D> Sleep<D>
 where
     D: Delay,
 {
+    /// Creates a new `Sleep` that completes after the specified duration.
+    /// 
+    /// # Example
+    /// 
+    /// Creates a sleep with tokio's timer
+    /// 
+    /// ```rust,no_run
+    /// use std::time::Duration;
+    /// use timer_kit::Sleep;
+    /// 
+    /// let sleep = Sleep::<tokio::time::Sleep>::new(Duration::from_millis(100));
+    /// sleep.await;
+    /// ```
+    /// 
+    /// Creates a sleep with futures_timer's timer
+    /// 
+    /// ```rust,no_run
+    /// use std::time::Duration;
+    /// use timer_kit::Sleep;
+    /// 
+    /// let sleep = Sleep::<futures_timer::Delay>::new(Duration::from_millis(100));
+    /// sleep.await;
+    /// ```
     pub fn new(duration: Duration) -> Self 
     {
         let delay = Box::pin(D::delay(duration));
@@ -36,6 +109,30 @@ where
         }
     }
 
+    /// Creates a new `Sleep` that completes at the specified deadline
+    /// 
+    /// # Example
+    /// 
+    /// Creates a sleep with tokio's timer
+    /// 
+    /// ```rust,no_run
+    /// use std::time::Duration;
+    /// use tokio::time::Instant;
+    /// use timer_kit::Sleep;
+    /// 
+    /// let sleep = Sleep::<tokio::time::Sleep>::new_until(Instant::now() + Duration::from_millis(100));
+    /// sleep.await;
+    /// ```
+    /// 
+    /// Creates a sleep with futures_timer's timer
+    /// 
+    /// ```rust,no_run
+    /// use std::time::{Duration, Instant};
+    /// use timer_kit::Sleep;
+    /// 
+    /// let sleep = Sleep::<futures_timer::Delay>::new_until(Instant::now() + Duration::from_millis(100));
+    /// sleep.await;
+    /// ```
     pub fn new_until(deadline: D::Instant) -> Self {
         Self {
             delay: Box::pin(D::delay_until(deadline)),
@@ -43,11 +140,13 @@ where
         }
     }
 
+    /// Reset the `Sleep` to a new deadline
     pub fn reset(&mut self, deadline: D::Instant) {
         self.deadline = deadline;
         self.delay.as_mut().reset(deadline);
     }
 
+    /// Gets the deadline
     pub fn deadline(&self) -> D::Instant {
         self.deadline
     }

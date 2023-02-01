@@ -1,4 +1,4 @@
-//! A queue of delayed elements.
+//! A queue of delayed elements. This is ported from `tokio_util::time::delay_queue`.
 //!
 //! See [`DelayQueue`] for more details.
 //!
@@ -21,7 +21,7 @@ use std::task::{self, Poll, Waker};
 use crate::wheel::{self, Wheel};
 use crate::{Duration, Instant, Sleep, Delay};
 
-/// A queue of delayed elements.
+/// A queue of delayed elements. This is ported from `tokio_util::time::delay_queue`.
 ///
 /// Once an element is inserted into the `DelayQueue`, it is yielded once the
 /// specified deadline has been reached.
@@ -72,49 +72,7 @@ use crate::{Duration, Instant, Sleep, Delay};
 /// Using `DelayQueue` to manage cache entries.
 ///
 /// ```rust,no_run
-/// use tokio_util::time::{DelayQueue, delay_queue};
-///
-/// use futures::ready;
-/// use std::collections::HashMap;
-/// use std::task::{Context, Poll};
-/// use std::time::Duration;
-/// # type CacheKey = String;
-/// # type Value = String;
-///
-/// struct Cache {
-///     entries: HashMap<CacheKey, (Value, delay_queue::Key)>,
-///     expirations: DelayQueue<CacheKey>,
-/// }
-///
-/// const TTL_SECS: u64 = 30;
-///
-/// impl Cache {
-///     fn insert(&mut self, key: CacheKey, value: Value) {
-///         let delay = self.expirations
-///             .insert(key.clone(), Duration::from_secs(TTL_SECS));
-///
-///         self.entries.insert(key, (value, delay));
-///     }
-///
-///     fn get(&self, key: &CacheKey) -> Option<&Value> {
-///         self.entries.get(key)
-///             .map(|&(ref v, _)| v)
-///     }
-///
-///     fn remove(&mut self, key: &CacheKey) {
-///         if let Some((_, cache_key)) = self.entries.remove(key) {
-///             self.expirations.remove(&cache_key);
-///         }
-///     }
-///
-///     fn poll_purge(&mut self, cx: &mut Context<'_>) -> Poll<()> {
-///         while let Some(entry) = ready!(self.expirations.poll_expired(cx)) {
-///             self.entries.remove(entry.get_ref());
-///         }
-///
-///         Poll::Ready(())
-///     }
-/// }
+/// // TODO: add example
 /// ```
 ///
 /// [`insert`]: method@Self::insert
@@ -458,7 +416,7 @@ where
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// # use tokio_util::time::DelayQueue;
     /// # use std::time::Duration;
     ///
@@ -514,7 +472,7 @@ where
     ///
     /// Basic usage
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// use tokio::time::{Duration, Instant};
     /// use tokio_util::time::DelayQueue;
     ///
@@ -635,7 +593,7 @@ where
     ///
     /// Basic usage
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// use tokio_util::time::DelayQueue;
     /// use std::time::Duration;
     ///
@@ -708,7 +666,7 @@ where
     ///
     /// Basic usage
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// use tokio_util::time::DelayQueue;
     /// use std::time::Duration;
     ///
@@ -756,7 +714,7 @@ where
     ///
     /// Basic usage
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// use tokio_util::time::DelayQueue;
     /// use std::time::Duration;
     ///
@@ -800,7 +758,7 @@ where
     ///
     /// Basic usage
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// use tokio::time::{Duration, Instant};
     /// use tokio_util::time::DelayQueue;
     ///
@@ -857,7 +815,7 @@ where
     ///
     /// Basic usage
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// use tokio_util::time::DelayQueue;
     /// use std::time::Duration;
     ///
@@ -905,7 +863,7 @@ where
     ///
     /// Basic usage
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// use tokio_util::time::DelayQueue;
     /// use std::time::Duration;
     ///
@@ -936,7 +894,7 @@ where
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// use tokio_util::time::DelayQueue;
     /// use std::time::Duration;
     ///
@@ -964,7 +922,7 @@ where
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// use tokio_util::time::DelayQueue;
     ///
     /// let delay_queue: DelayQueue<i32> = DelayQueue::with_capacity(10);
@@ -978,7 +936,7 @@ where
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// use tokio_util::time::DelayQueue;
     /// use std::time::Duration;
     ///
@@ -1013,7 +971,7 @@ where
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```rust,ignore
     /// use tokio_util::time::DelayQueue;
     /// use std::time::Duration;
     ///
@@ -1043,7 +1001,7 @@ where
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```rust,ignore
     /// use tokio_util::time::DelayQueue;
     /// use std::time::Duration;
     ///

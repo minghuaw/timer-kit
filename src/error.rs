@@ -1,3 +1,6 @@
+//! Error types.
+
+/// Timeout elapsed error.
 #[derive(Debug)]
 pub struct Elapsed {
     _sealed: (),
@@ -11,7 +14,7 @@ impl Elapsed {
 
 impl std::fmt::Display for Elapsed {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "timer elapsed")
+        write!(f, "Timeout elapsed")
     }
 }
 
