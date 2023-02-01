@@ -13,6 +13,7 @@ default = [
     # "tokio",
     # "smol",
     # "wasm-timer",
+    # "fluvio-wasm-timer",
 ]
 
 [dependencies]
@@ -37,6 +38,7 @@ smol-potat = { version = "1", features = ["auto"] }
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 # Optional dependencies
 wasm-timer = { version = "0.2", optional = true }
+fluvio-wasm-timer = { version = "0.2", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-timer = { version = "0.2" }
