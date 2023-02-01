@@ -1,3 +1,6 @@
+//! `futures-timer` doesn't seems to work well with polling by the macro `assert_ready_some!`,
+//! which is why some tests use `.await` instead.
+
 #![allow(unused_imports)]
 
 use std::time::Duration;
@@ -7,7 +10,7 @@ use timer_kit::{Delay, Instant};
 
 use super::*;
 
-pub async fn single_immediate_delay<D>() 
+pub async fn single_immediate_delay<D>()
 where
     D: Delay,
     D::Instant: Unpin,
@@ -20,26 +23,28 @@ where
     assert_ready_some!(queue.next());
 }
 
-pub async fn multiple_immediate_delay<D>() 
+pub async fn multiple_immediate_delay<D>()
 where
     D: Delay,
     D::Instant: Unpin,
 {
     let mut queue = timer_kit::DelayQueue::<D, _>::new();
-    queue.insert_at("1", D::Instant::now());
-    queue.insert_at("2", D::Instant::now());
-    queue.insert_at("3", D::Instant::now());
-
-    timer_kit::sleep::<D>(Duration::from_millis(1)).await;
+    let start = D::Instant::now();
+    queue.insert_at("1", start);
+    queue.insert_at("2", start);
+    queue.insert_at("3", start);
 
     let mut buffer = vec![];
     for _ in 0..3 {
-        let fut = queue.next();
-        let val = assert_ready_some!(fut).into_inner();
-        buffer.push(val);
+        let val = queue.next().await.map(|expired| expired.into_inner());
+        assert!(val.is_some());
+        buffer.push(val.unwrap());
     }
+    let end = D::Instant::now();
+    let elapsed = end - start;
+    assert!(elapsed < Duration::from_millis(50)); // TODO: this might be a large value on wasm
 
-    let next = assert_ready!(queue.next());
+    let next = queue.next().await;
     assert!(next.is_none());
 
     buffer.sort();
@@ -48,25 +53,30 @@ where
     assert_eq!(buffer[2], "3");
 }
 
-pub async fn single_short_delay<D>() 
+pub async fn single_short_delay<D>()
 where
     D: Delay,
     D::Instant: Unpin,
 {
     let mut queue = timer_kit::DelayQueue::<D, _>::new();
-    queue.insert_at("foo", D::Instant::now() + Duration::from_millis(100));
+    let start = D::Instant::now();
+    queue.insert_at("foo", start + Duration::from_millis(100));
 
     timer_kit::sleep::<D>(Duration::from_millis(50)).await;
-    let fut = queue.next();
-    assert_pending!(fut);
+    assert_pending!(queue.next());
 
     timer_kit::sleep::<D>(Duration::from_millis(50)).await;
-    assert_ready_some!(queue.next());
+    let entry = queue.next().await;
+    let end = D::Instant::now();
+    let elapsed = end - start;
+    assert!(elapsed >= Duration::from_millis(100));
+    assert!(entry.is_some());
 
-    assert_ready_none!(queue.next());
+    let next = queue.next().await;
+    assert!(next.is_none());
 }
 
-pub async fn multi_delay_at_start<D>() 
+pub async fn multi_delay_at_start<D>()
 where
     D: Delay,
     D::Instant: Unpin,
@@ -82,19 +92,23 @@ where
     assert_pending!(queue.next());
 
     let mut buffer = vec![];
-    for delay in &delays {
-        timer_kit::sleep_until::<D>(start + Duration::from_millis(*delay)).await;
-        timer_kit::sleep::<D>(Duration::from_millis(1)).await;
-
-        let val = assert_ready_some!(queue.next()).into_inner();
-        buffer.push(val);
+    for _delay in &delays {
+        let val = queue.next().await.map(|expired| expired.into_inner());
+        #[cfg(not(target_arch = "wasm32"))] // TODO: disabled because time is not precise on wasm
+        {
+            let now = D::Instant::now();
+            let elapsed = now - start;
+            assert!(elapsed >= Duration::from_millis(*_delay)); 
+        }
+        assert!(val.is_some());
+        buffer.push(val.unwrap());
     }
 
     assert_ready_none!(queue.next());
     assert_eq!(buffer, delays);
 }
 
-pub async fn insert_in_past_fires_immediately<D>() 
+pub async fn insert_in_past_fires_immediately<D>()
 where
     D: Delay,
     D::Instant: Unpin,
@@ -108,7 +122,7 @@ where
     assert_ready_none!(queue.next());
 }
 
-pub async fn remove_entry<D>() 
+pub async fn remove_entry<D>()
 where
     D: Delay,
     D::Instant: Unpin,
@@ -124,27 +138,31 @@ where
     assert_ready_none!(queue.next());
 }
 
-pub async fn reset_entry<D>() 
+pub async fn reset_entry<D>()
 where
     D: Delay,
     D::Instant: Unpin,
 {
     let mut queue = timer_kit::DelayQueue::<D, _>::new();
-    
+
     let key = queue.insert("foo", Duration::from_millis(100));
 
     timer_kit::sleep::<D>(Duration::from_millis(50)).await;
     assert_pending!(queue.next());
 
+    let reset_start = D::Instant::now();
     queue.reset(&key, Duration::from_millis(100));
     timer_kit::sleep::<D>(Duration::from_millis(50)).await;
     assert_pending!(queue.next());
 
-    timer_kit::sleep::<D>(Duration::from_millis(60)).await;
-    assert_ready_some!(queue.next());
+    let value = queue.next().await.unwrap().into_inner();
+    let end = D::Instant::now();
+    let elapsed = end - reset_start;
+    assert!(elapsed >= Duration::from_millis(100));
+    assert_eq!(value, "foo");
 }
 
-pub async fn reset_much_later<D>() 
+pub async fn reset_much_later<D>()
 where
     D: Delay,
     D::Instant: Unpin,
@@ -162,7 +180,7 @@ where
     assert_ready_some!(queue.next());
 }
 
-pub async fn reset_twice<D>() 
+pub async fn reset_twice<D>()
 where
     D: Delay,
     D::Instant: Unpin,
@@ -238,39 +256,40 @@ where
         "foo" => {
             let entry = queue.remove(&key2);
             assert_eq!(entry.into_inner(), "bar");
-        },
+        }
         "bar" => {
             let entry = queue.remove(&key1);
             assert_eq!(entry.into_inner(), "foo");
-        },
+        }
         _ => panic!("unexpected value"),
     }
 }
 
-pub async fn expires_before_last_insert<D>() 
+pub async fn expires_before_last_insert<D>()
 where
     D: Delay,
     D::Instant: Unpin,
 {
     let mut queue = timer_kit::DelayQueue::<D, _>::new();
 
+    let start = D::Instant::now();
+
+    queue.insert_at("foo", start + Duration::from_millis(10_000));
+
+    assert_pending!(queue.next());
+
+    queue.insert_at("bar", start + Duration::from_millis(600));
+
+    assert_pending!(queue.next());
+
+    let entry = queue.next().await.unwrap().into_inner();
     let now = D::Instant::now();
-
-    queue.insert_at("foo", now + Duration::from_millis(10_000));
-
-    assert_pending!(queue.next());
-
-    queue.insert_at("bar", now + Duration::from_millis(600));
-
-    assert_pending!(queue.next());
-
-    timer_kit::sleep::<D>(Duration::from_millis(610)).await;
-
-    let entry = assert_ready_some!(queue.next()).into_inner();
+    let elapsed = now - start;
+    assert!(elapsed >= Duration::from_millis(600));
     assert_eq!(entry, "bar");
 }
 
-pub async fn multi_reset<D>() 
+pub async fn multi_reset<D>()
 where
     D: Delay,
     D::Instant: Unpin,
@@ -290,12 +309,24 @@ where
     timer_kit::sleep::<D>(Duration::from_millis(110)).await;
     assert_pending!(queue.next());
 
-    timer_kit::sleep::<D>(Duration::from_millis(300)).await;
-    let entry = assert_ready_some!(queue.next());
+    let entry = queue.next().await.unwrap();
+    // TODO: disabled because time on wasm is not precise
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let now = D::Instant::now();
+        let elapsed = now - start;
+        assert!(elapsed >= Duration::from_millis(400) && elapsed < Duration::from_millis(500)); 
+    }
     assert_eq!(entry.into_inner(), "two");
 
-    timer_kit::sleep::<D>(Duration::from_millis(100)).await;
-    let entry = assert_ready_some!(queue.next());
+    let entry = queue.next().await.unwrap();
+    // TODO: disabled because time on wasm is not precise
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let now = D::Instant::now();
+        let elapsed = now - start;
+        assert!(elapsed >= Duration::from_millis(500)); 
+    }
     assert_eq!(entry.into_inner(), "one");
 }
 
@@ -361,9 +392,10 @@ where
 
     queue.reset_at(&key1, start + Duration::from_millis(300));
 
-    timer_kit::sleep::<D>(Duration::from_millis(210)).await;
-
-    let entry = assert_ready_some!(queue.next());
+    let entry = queue.next().await.unwrap();
+    let now = D::Instant::now();
+    let elapsed = now - start;
+    assert!(elapsed >= Duration::from_millis(200) && elapsed < Duration::from_millis(300));
 
     assert_eq!(entry.into_inner(), "two");
 }
@@ -393,7 +425,7 @@ where
     assert_eq!(entry.into_inner(), "two");
 }
 
-pub async fn insert_after_ready_poll<D>() 
+pub async fn insert_after_ready_poll<D>()
 where
     D: Delay,
     D::Instant: Unpin,
@@ -454,9 +486,10 @@ where
 
     assert_eq!(queue.len(), 1);
 
-    timer_kit::sleep::<D>(Duration::from_millis(101)).await;
-
-    let entry = assert_ready_some!(queue.next());
+    let entry = queue.next().await.unwrap();
+    let now = D::Instant::now();
+    let elapsed = now - start;
+    assert!(elapsed >= Duration::from_millis(100));
     assert_eq!(entry.into_inner(), "one");
 
     assert_eq!(queue.len(), 0);
@@ -498,18 +531,18 @@ where
 {
     let mut queue = timer_kit::DelayQueue::<D, _>::new();
 
-    let now = D::Instant::now();
+    let start = D::Instant::now();
 
-    queue.insert_at("foo", now + Duration::from_millis(200));
+    queue.insert_at("foo", start + Duration::from_millis(200));
 
     assert_pending!(queue.next());
 
     timer_kit::sleep::<D>(Duration::from_millis(80)).await;
 
     assert_pending!(queue.next());
-    queue.insert_at("bar", now + Duration::from_millis(40));
+    queue.insert_at("bar", start + Duration::from_millis(40));
 
-    let entry = assert_ready_some!(queue.next()).into_inner();
+    let entry = queue.next().await.unwrap().into_inner();
     assert_eq!(entry, "bar");
 }
 
@@ -538,11 +571,13 @@ where
     queue.insert_at("one", start + Duration::from_millis(100));
     queue.insert_at("two", start + Duration::from_millis(100));
 
-    timer_kit::sleep::<D>(Duration::from_millis(101)).await;
-
     for _ in 0..2 {
-        assert_ready_some!(queue.next());
+        let entry = queue.next().await.unwrap().into_inner();
+        assert!(entry == "one" || entry == "two");
     }
+    let now = D::Instant::now();
+    let elapsed = now - start;
+    assert!(elapsed >= Duration::from_millis(100));
 
     queue.compact();
 
@@ -586,11 +621,13 @@ where
     let key3 = queue.insert_at("three", start + Duration::from_millis(200));
     let key4 = queue.insert_at("four", start + Duration::from_millis(200));
 
-    timer_kit::sleep::<D>(Duration::from_millis(101)).await;
-
     for _ in 0..2 {
-        assert_ready_some!(queue.next());
+        let entry = queue.next().await.unwrap().into_inner();
+        assert!(entry == "one" || entry == "two");
     }
+    let now = D::Instant::now();
+    let elapsed = now - start;
+    assert!(elapsed >= Duration::from_millis(100) && elapsed < Duration::from_millis(200));
 
     queue.compact();
 
@@ -615,40 +652,57 @@ where
 {
     let mut queue = timer_kit::DelayQueue::<D, _>::new();
 
-    let start = D::Instant::now();
+    let initial_start = D::Instant::now();
 
-    queue.insert_at("one", start + Duration::from_millis(100));
-    queue.insert_at("two", start + Duration::from_millis(100));
+    queue.insert_at("one", initial_start + Duration::from_millis(100));
+    queue.insert_at("two", initial_start + Duration::from_millis(100));
 
-    queue.insert_at("three", start + Duration::from_millis(200));
-    let key4 = queue.insert_at("four", start + Duration::from_millis(200));
-
-    timer_kit::sleep::<D>(Duration::from_millis(101)).await;
+    queue.insert_at("three", initial_start + Duration::from_millis(200));
+    let key4 = queue.insert_at("four", initial_start + Duration::from_millis(200));
 
     for _ in 0..2 {
-        assert_ready_some!(queue.next());
+        let expired = queue.next().await;
+        assert!(expired.is_some());
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let now = D::Instant::now();
+        let elapsed = now - initial_start;
+        assert!(elapsed >= Duration::from_millis(100) && elapsed < Duration::from_millis(200));
     }
 
     queue.compact();
 
-    let start = D::Instant::now();
-    
-    queue.insert_at("five", start + Duration::from_millis(100));
-    let key6 = queue.insert_at("six", start + Duration::from_millis(100));
+    let compact_start = D::Instant::now();
 
-    queue.reset_at(&key4, start + Duration::from_millis(200));
-    queue.reset_at(&key6, start + Duration::from_millis(200));
+    queue.insert_at("five", compact_start + Duration::from_millis(100));
+    let key6 = queue.insert_at("six", compact_start + Duration::from_millis(100));
 
-    timer_kit::sleep::<D>(Duration::from_millis(101)).await;
+    queue.reset_at(&key4, compact_start + Duration::from_millis(200));
+    queue.reset_at(&key6, compact_start + Duration::from_millis(200));
 
     for _ in 0..2 {
-        assert_ready_some!(queue.next());
+        let expired = queue.next().await;
+        assert!(expired.is_some());
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let now = D::Instant::now();
+        let elapsed = now - compact_start;
+        assert!(elapsed >= Duration::from_millis(100) && elapsed < Duration::from_millis(200));
     }
 
     timer_kit::sleep::<D>(Duration::from_millis(101)).await;
 
     for _ in 0..2 {
-        assert_ready_some!(queue.next());
+        let expired = queue.next().await;
+        assert!(expired.is_some());
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let now = D::Instant::now();
+        let elapsed = now - compact_start;
+        assert!(elapsed >= Duration::from_millis(200));
     }
 
     assert_ready_none!(queue.next());
