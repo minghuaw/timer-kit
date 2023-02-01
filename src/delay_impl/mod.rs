@@ -6,6 +6,10 @@ cfg_not_wasm32! {
     cfg_smol! {
         mod smol;
     }
+
+    cfg_futures_timer! {
+        mod futures_timer;
+    }
 }
 
 cfg_wasm32! {

@@ -14,6 +14,7 @@ default = [
     # "smol",
     # "wasm-timer",
     # "fluvio-wasm-timer",
+    # "futures-timer"
 ]
 
 [dependencies]
@@ -29,11 +30,13 @@ futures = "0.3"
 # Optional dependencies
 tokio = { version = "1", features = ["time"], optional = true }
 smol = { version = "1", optional = true }
+futures-timer = { version = "3", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { version = "1", features = ["time", "rt", "macros", "io-util"]}
 smol = { version = "1"}
 smol-potat = { version = "1", features = ["auto"] }
+futures-test = "0.3"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 # Optional dependencies

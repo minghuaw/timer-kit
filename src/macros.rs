@@ -53,3 +53,12 @@ macro_rules! cfg_fluvio_wasm_timer {
         )*
     };
 }
+
+macro_rules! cfg_futures_timer {
+    ($($item:item)*) => {
+        $(
+            #[cfg(feature = "futures-timer")]
+            $item
+        )*
+    };
+}

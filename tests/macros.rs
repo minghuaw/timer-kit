@@ -36,6 +36,15 @@ macro_rules! cfg_tokio {
     };
 }
 
+macro_rules! cfg_futures_timer {
+    ($($item:item)*) => {
+        $(
+            #[cfg(feature = "futures-timer")]
+            $item
+        )*
+    };
+}
+
 macro_rules! cfg_wasm_timer {
     ($($item:item)*) => {
         $(

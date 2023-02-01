@@ -130,12 +130,13 @@ where
     D::Instant: Unpin,
 {
     let mut queue = timer_kit::DelayQueue::<D, _>::new();
-    let key = queue.insert_at("foo", D::Instant::now() + Duration::from_millis(100));
+    
+    let key = queue.insert("foo", Duration::from_millis(100));
 
     timer_kit::sleep::<D>(Duration::from_millis(50)).await;
     assert_pending!(queue.next());
 
-    queue.reset_at(&key, D::Instant::now() + Duration::from_millis(100));
+    queue.reset(&key, Duration::from_millis(100));
     timer_kit::sleep::<D>(Duration::from_millis(50)).await;
     assert_pending!(queue.next());
 
