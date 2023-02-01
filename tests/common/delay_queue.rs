@@ -293,7 +293,7 @@ where
     let entry = assert_ready_some!(queue.next());
     assert_eq!(entry.into_inner(), "two");
 
-    timer_kit::sleep::<D>(Duration::from_millis(100));
+    timer_kit::sleep::<D>(Duration::from_millis(100)).await;
     let entry = assert_ready_some!(queue.next());
     assert_eq!(entry.into_inner(), "one");
 }
@@ -374,17 +374,19 @@ where
 {
     let mut queue = timer_kit::DelayQueue::<D, _>::new();
 
-    queue.insert("one", Duration::from_millis(200));
+    let start = D::Instant::now();
+
+    queue.insert_at("one", start + Duration::from_millis(200));
 
     assert_pending!(queue.next());
 
-    queue.insert("two", Duration::from_millis(100));
+    queue.insert_at("two", start + Duration::from_millis(100));
 
-    timer_kit::sleep::<D>(Duration::from_millis(99)).await;
+    timer_kit::sleep_until::<D>(start + Duration::from_millis(90)).await;
 
     assert_pending!(queue.next());
 
-    timer_kit::sleep::<D>(Duration::from_millis(2)).await;
+    timer_kit::sleep_until::<D>(start + Duration::from_millis(101)).await;
 
     let entry = assert_ready_some!(queue.next());
     assert_eq!(entry.into_inner(), "two");
@@ -426,11 +428,11 @@ where
 
     assert_pending!(queue.next());
 
-    timer_kit::sleep_until::<D>(start + Duration::from_millis(119)).await;
+    timer_kit::sleep_until::<D>(start + Duration::from_millis(110)).await;
 
     assert_pending!(queue.next());
 
-    timer_kit::sleep::<D>(Duration::from_millis(2)).await;
+    timer_kit::sleep::<D>(Duration::from_millis(11)).await;
 
     let entry = assert_ready_some!(queue.next());
     assert_eq!(entry.into_inner(), "one");
@@ -478,11 +480,11 @@ where
 
     assert_pending!(queue.next());
 
-    timer_kit::sleep_until::<D>(start + Duration::from_millis(119)).await;
+    timer_kit::sleep_until::<D>(start + Duration::from_millis(110)).await;
 
     assert_pending!(queue.next());
 
-    timer_kit::sleep::<D>(Duration::from_millis(2)).await;
+    timer_kit::sleep::<D>(Duration::from_millis(11)).await;
 
     let entry = assert_ready_some!(queue.next());
     assert_eq!(entry.into_inner(), "one");
