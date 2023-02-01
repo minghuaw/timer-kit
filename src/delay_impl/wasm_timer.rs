@@ -4,7 +4,7 @@ use wasm_timer::{Delay, Instant};
 
 impl crate::Delay for Delay {
     type Value = io::Result<()>;
-    type Instant = wasm_timer::Instant;
+    type Instant = Instant;
 
     fn delay(duration: std::time::Duration) -> Self {
         Delay::new(duration)
