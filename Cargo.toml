@@ -42,3 +42,5 @@ fluvio-wasm-timer = { version = "0.2", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-timer = { version = "0.2" }
+fluvio-wasm-timer = { version = "0.2" }
+wasm-bindgen-test = "0.3"

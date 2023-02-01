@@ -44,3 +44,12 @@ macro_rules! cfg_wasm_timer {
         )*
     };
 }
+
+macro_rules! cfg_fluvio_wasm_timer {
+    ($($item:item)*) => {
+        $(
+            #[cfg(feature = "fluvio-wasm-timer")]
+            $item
+        )*
+    };
+}

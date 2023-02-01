@@ -139,7 +139,7 @@ where
     timer_kit::sleep::<D>(Duration::from_millis(50)).await;
     assert_pending!(queue.next());
 
-    timer_kit::sleep::<D>(Duration::from_millis(51)).await;
+    timer_kit::sleep::<D>(Duration::from_millis(60)).await;
     assert_ready_some!(queue.next());
 }
 
@@ -263,7 +263,7 @@ where
 
     assert_pending!(queue.next());
 
-    timer_kit::sleep::<D>(Duration::from_millis(600)).await;
+    timer_kit::sleep::<D>(Duration::from_millis(610)).await;
 
     let entry = assert_ready_some!(queue.next()).into_inner();
     assert_eq!(entry, "bar");

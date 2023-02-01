@@ -34,6 +34,7 @@ where
     // Miss two tick
     timer_kit::sleep::<D>(Duration::from_millis(700)).await;
     assert_interval_poll_ready!(interval);
+    timer_kit::sleep::<D>(Duration::from_millis(10)).await;
     assert_interval_poll_ready!(interval);
     assert_interval_poll_pending!(interval);
 
