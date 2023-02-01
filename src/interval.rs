@@ -94,10 +94,21 @@ where
 }
 
 /// Ported from [`tokio::time::interval::MissedTickBehavior`]
+/// 
+/// # Default
+/// 
+/// The default behavior is [`MissedTickBehavior::Burst`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MissedTickBehavior {
+    /// Ticks as fast as possible until caught up.
     Burst,
+
+    /// Tick at multiples of `period` from when [`tick`] was called, rather than
+    /// from `start`.
     Delay,
+
+    /// Skips missed ticks and tick on the next multiple of `period` from
+    /// `start`.
     Skip,
 }
 
@@ -146,6 +157,20 @@ pub struct Interval<D: Delay> {
     delay: Pin<Box<Sleep<D>>>,
     missed_tick_behavior: MissedTickBehavior,
     period: Duration,
+}
+
+impl<D> std::fmt::Debug for Interval<D>
+where
+    D: Delay + std::fmt::Debug,
+    D::Instant: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Interval")
+            .field("delay", &self.delay)
+            .field("missed_tick_behavior", &self.missed_tick_behavior)
+            .field("period", &self.period)
+            .finish()
+    }
 }
 
 impl<D> Interval<D>
@@ -244,18 +269,22 @@ where
         }
     }
 
+    /// Returns the [`MissedTickBehavior`] of the [`Interval`].
     pub fn missed_tick_behavior(&self) -> MissedTickBehavior {
         self.missed_tick_behavior
     }
 
+    /// Sets the [`MissedTickBehavior`] of the [`Interval`].
     pub fn set_missed_tick_behavior(&mut self, behavior: MissedTickBehavior) {
         self.missed_tick_behavior = behavior;
     }
 
+    /// Returns the period of the [`Interval`].
     pub fn period(&self) -> Duration {
         self.period
     }
 
+    /// Polls the next tick of the [`Interval`].
     pub fn poll_tick(&mut self, cx: &mut Context<'_>) -> Poll<D::Value> {
         use crate::Instant;
 
@@ -275,10 +304,13 @@ where
         Poll::Ready(value)
     }
 
+    /// Completes the next tick of the [`Interval`].
     pub async fn tick(&mut self) -> D::Value {
         poll_fn(|cx| self.poll_tick(cx)).await
     }
 
+    /// Resets the interval to complete one period after the current time.
+    /// This method ignores [`MissedTickBehavior`] strategy.
     pub fn reset(&mut self) {
         use crate::Instant;
 

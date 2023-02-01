@@ -1,3 +1,5 @@
+#![deny(missing_docs, missing_debug_implementations)]
+
 //! A timer toolkit that is generic over the underlying timer implementation. 
 //! 
 //! This crate does not implement any platform-specific timer but uses a generic abstraction over
@@ -89,15 +91,19 @@ pub trait Delay {
     /// The type of instant used by the delay.
     type Instant: Instant;
 
+    /// Creates a new delay with a specified duration.
     fn delay(duration: Duration) -> Self;
 
+    /// Creates a new delay with a specified deadline.
     fn delay_until(deadline: Self::Instant) -> Self;
 
-    /// Some implementation do not expose the deadline, so this is an optional
+    /// Some implementation do not expose the deadline, so this is an optional.
     fn deadline(&self) -> Option<Self::Instant>;
 
+    /// Polls the delay for completion.
     fn poll_elapsed(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Value>;
 
+    /// Resets the delay to a new deadline.
     fn reset(self: Pin<&mut Self>, deadline: Self::Instant);
 }
 
@@ -129,5 +135,6 @@ where
         + PartialOrd
         + Ord,
 {
+    /// Returns the instant that is "now"
     fn now() -> Self;
 }
