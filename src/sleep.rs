@@ -6,22 +6,22 @@ use crate::{Delay, Instant};
 /// 
 /// # Example
 /// 
-/// Creates a sleep with tokio's timer
+/// Creates a sleep with smol's timer
 /// 
 /// ```rust,no_run
 /// use std::time::Duration;
 /// use timer_kit::sleep;
 /// 
-/// sleep::<tokio::time::Sleep>(Duration::from_millis(100)).await;
+/// sleep::<smol::Timer>(Duration::from_millis(100)).await;
 /// ```
 /// 
-/// Creates a sleep with futures_timer's timer
+/// Creates a sleep with `fluvio_wasm_timer::Delay`
 /// 
 /// ```rust,no_run
 /// use std::time::Duration;
 /// use timer_kit::sleep;
 /// 
-/// sleep::<futures_timer::Delay>(Duration::from_millis(100)).await;
+/// sleep::<fluvio_wasm_timer::Delay>(Duration::from_millis(100)).await;
 /// ```
 pub fn sleep<D>(duration: Duration) -> Sleep<D> 
 where
@@ -34,23 +34,23 @@ where
 /// 
 /// # Example
 /// 
-/// Creates a sleep with tokio's timer
-/// 
-/// ```rust,no_run
-/// use std::time::Duration;
-/// use tokio::time::Instant;
-/// use timer_kit::sleep_until;
-/// 
-/// sleep_until::<tokio::time::Sleep>(Instant::now() + Duration::from_millis(100)).await;
-/// ```
-/// 
-/// Creates a sleep with futures_timer's timer
+/// Creates a sleep with smol's timer
 /// 
 /// ```rust,no_run
 /// use std::time::{Duration, Instant};
 /// use timer_kit::sleep_until;
 /// 
-/// sleep_until::<futures_timer::Delay>(Instant::now() + Duration::from_millis(100)).await;
+/// sleep_until::<smol::Timer>(Instant::now() + Duration::from_millis(100)).await;
+/// ```
+/// 
+/// Creates a sleep with `fluvio_wasm_timer::Delay`
+/// 
+/// ```rust,no_run
+/// use std::time::{Duration};
+/// use fluent_wasm_timer::Instant;
+/// use timer_kit::sleep_until;
+/// 
+/// sleep_until::<fluvio_wasm_timer::Delay>(Instant::now() + Duration::from_millis(100)).await;
 /// ```
 pub fn sleep_until<D>(deadline: D::Instant) -> Sleep<D> 
 where
@@ -80,23 +80,23 @@ where
     /// 
     /// # Example
     /// 
-    /// Creates a sleep with tokio's timer
+    /// Creates a sleep with smol's timer
     /// 
     /// ```rust,no_run
     /// use std::time::Duration;
     /// use timer_kit::Sleep;
     /// 
-    /// let sleep = Sleep::<tokio::time::Sleep>::new(Duration::from_millis(100));
+    /// let sleep = Sleep::<smol::Timer>::new(Duration::from_millis(100));
     /// sleep.await;
     /// ```
     /// 
-    /// Creates a sleep with futures_timer's timer
+    /// Creates a sleep with `fluvio_wasm_timer::Delay`
     /// 
     /// ```rust,no_run
     /// use std::time::Duration;
     /// use timer_kit::Sleep;
     /// 
-    /// let sleep = Sleep::<futures_timer::Delay>::new(Duration::from_millis(100));
+    /// let sleep = Sleep::<fluvio_wasm_timer::Delay>::new(Duration::from_millis(100));
     /// sleep.await;
     /// ```
     pub fn new(duration: Duration) -> Self 
@@ -113,24 +113,24 @@ where
     /// 
     /// # Example
     /// 
-    /// Creates a sleep with tokio's timer
-    /// 
-    /// ```rust,no_run
-    /// use std::time::Duration;
-    /// use tokio::time::Instant;
-    /// use timer_kit::Sleep;
-    /// 
-    /// let sleep = Sleep::<tokio::time::Sleep>::new_until(Instant::now() + Duration::from_millis(100));
-    /// sleep.await;
-    /// ```
-    /// 
-    /// Creates a sleep with futures_timer's timer
+    /// Creates a sleep with smol's timer
     /// 
     /// ```rust,no_run
     /// use std::time::{Duration, Instant};
     /// use timer_kit::Sleep;
     /// 
-    /// let sleep = Sleep::<futures_timer::Delay>::new_until(Instant::now() + Duration::from_millis(100));
+    /// let sleep = Sleep::<smol::Timer>::new_until(Instant::now() + Duration::from_millis(100));
+    /// sleep.await;
+    /// ```
+    /// 
+    /// Creates a sleep with `fluvio_wasm_timer::Delay`
+    /// 
+    /// ```rust,no_run
+    /// use std::time::{Duration};
+    /// use fluent_wasm_timer::Instant;
+    /// use timer_kit::Sleep;
+    /// 
+    /// let sleep = Sleep::<fluvio_wasm_timer::Delay>::new_until(Instant::now() + Duration::from_millis(100));
     /// sleep.await;
     /// ```
     pub fn new_until(deadline: D::Instant) -> Self {

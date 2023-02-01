@@ -1,10 +1,31 @@
-use std::{pin::Pin, future::Future, time::{Duration}, task::{Poll}};
+use std::{future::Future, pin::Pin, task::Poll, time::Duration};
 
 use pin_project_lite::pin_project;
 
-use crate::{Delay, error::{Elapsed}};
+use crate::{error::Elapsed, Delay};
 
-pub fn timeout<D, Fut>(duration: Duration, fut: Fut) -> Timeout<D, Fut> 
+/// Creates a new `Timeout` with a specified duration.
+/// 
+/// # Example
+/// 
+/// Creates a timeout with smol's timer
+/// 
+/// ```rust,no_run
+/// use std::time::Duration;
+/// use timer_kit::timeout;
+/// 
+/// let result = timeout::<smol::Timer, _>(Duration::from_millis(100), async { }).await;
+/// ```
+/// 
+/// Creates a timeout with `fluvio_wasm_timer::Delay`
+/// 
+/// ```rust,no_run
+/// use std::time::Duration;
+/// use timer_kit::timeout;
+/// 
+/// let result = timeout::<fluvio_wasm_timer::Delay, _>(Duration::from_millis(100), async { }).await;
+/// ```
+pub fn timeout<D, Fut>(duration: Duration, fut: Fut) -> Timeout<D, Fut>
 where
     D: Delay,
     Fut: Future,
@@ -12,7 +33,29 @@ where
     Timeout::new(duration, fut)
 }
 
-pub fn timeout_at<D, Fut>(deadline: D::Instant, fut: Fut) -> Timeout<D, Fut> 
+/// Creates a new `Timeout` with a specified deadline.
+/// 
+/// # Example
+/// 
+/// Creates a timeout with smol's timer
+/// 
+/// ```rust,no_run
+/// use std::time::{Duration, Instant};
+/// use timer_kit::timeout_at;
+/// 
+/// let result = timeout_at::<smol::Timer, _>(Instant::now() + Duration::from_millis(100), async { }).await;
+/// ```
+/// 
+/// Creates a timeout with `fluvio_wasm_timer::Delay`
+/// 
+/// ```rust,no_run
+/// use std::time::{Duration};
+/// use fluent_wasm_timer::Instant;
+/// use timer_kit::timeout_at;
+/// 
+/// let result = timeout_at::<fluvio_wasm_timer::Delay, _>(Instant::now() + Duration::from_millis(100), async { }).await;
+/// ```
+pub fn timeout_at<D, Fut>(deadline: D::Instant, fut: Fut) -> Timeout<D, Fut>
 where
     D: Delay,
     Fut: Future,
@@ -21,6 +64,16 @@ where
 }
 
 pin_project! {
+    /// A timeout future.
+    ///
+    /// It returns `<Fut as Future>::Output` if the future completes before the timeout or
+    /// [`Elapsed`] if the timeout elapses before the future completes.
+    ///
+    /// # Warning - Exhaustion
+    ///
+    /// This future is not able to avoid exhaustion if the future never completes and never returns
+    /// `Pending`. The user should ensure that the `Fut` future is able to return `Pending` at some
+    /// point to avoid exhaustion.
     pub struct Timeout<D, Fut> {
         #[pin]
         delay: D,
@@ -30,13 +83,32 @@ pin_project! {
     }
 }
 
-/// TODO: document that this is not able to avoid exhaustion if the future 
-/// never completes and never returns `Pending`
 impl<D, Fut> Timeout<D, Fut>
 where
     D: Delay,
     Fut: Future,
 {
+    /// Creates a new `Timeout` with a specified duration.
+    ///
+    /// # Example
+    ///
+    /// Creates a timeout with smol's timer
+    /// 
+    /// ```rust,no_run
+    /// use std::time::Duration;
+    /// use timer_kit::Timeout;
+    /// 
+    /// let result = Timeout::<smol::Timer, _>::new(Duration::from_millis(100), async {}).await;
+    /// ```
+    /// 
+    /// Creates a timeout with `fluvio_wasm_timer::Delay`
+    /// 
+    /// ```rust,no_run
+    /// use std::time::Duration;
+    /// use timer_kit::Timeout;
+    /// 
+    /// let result = Timeout::<fluvio_wasm_timer::Delay, _>::new(Duration::from_millis(100), async {}).await;
+    /// ```
     pub fn new(duration: Duration, future: Fut) -> Self {
         Self {
             delay: D::delay(duration),
@@ -44,6 +116,28 @@ where
         }
     }
 
+    /// Creates a new `Timeout` with a specified deadline.
+    ///
+    /// # Example
+    ///
+    /// Creates a timeout with smol's timer
+    ///
+    /// ```rust,no_run
+    /// use std::time::{Duration, Instant};
+    /// use timer_kit::Timeout;
+    ///
+    /// let result = Timeout::<smol::Timer, _>::new_at(Instant::now() + Duration::from_millis(100), async {}).await;
+    /// ```
+    ///
+    /// Creates a timeout with `fluvio_wasm_timer::Delay`
+    /// 
+    /// ```rust,no_run
+    /// use std::time::Duration;
+    /// use fluent_wasm_timer::Instant;
+    /// use timer_kit::Timeout;
+    /// 
+    /// let result = Timeout::<fluvio_wasm_timer::Delay, _>::new_at(Instant::now() + Duration::from_millis(100), async {}).await;
+    /// ```
     pub fn new_at(deadline: D::Instant, future: Fut) -> Self {
         Self {
             delay: D::delay_until(deadline),
@@ -52,14 +146,17 @@ where
     }
 }
 
-impl<D, Fut> Future for Timeout<D, Fut> 
+impl<D, Fut> Future for Timeout<D, Fut>
 where
     D: Delay,
     Fut: Future,
 {
     type Output = Result<Fut::Output, Elapsed>;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
         let mut this = self.project();
 
         if let Poll::Ready(output) = this.future.poll(cx) {
