@@ -2,6 +2,9 @@
 
 //! A timer toolkit that is generic over the underlying timer implementation. 
 //! 
+//! [![crate_version](https://img.shields.io/crates/v/timer-kit.svg?style=flat)](https://crates.io/crates/timer-kit)
+//! [![docs_version](https://img.shields.io/badge/docs-latest-blue.svg?style=flat)](https://docs.rs/timer-kit/latest/timer_kit/)
+//! 
 //! This crate does not implement any platform-specific timer but uses a generic abstraction over
 //! the timer implementation to provide a set of timer related tools:
 //! 
