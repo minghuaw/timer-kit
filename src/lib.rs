@@ -14,7 +14,7 @@
 //! `tokio`, so this crate is completely not needed if you are already using `tokio` in your
 //! project.
 //! 
-//! The core of this crate is the [`Delay`] trait, and it is implemented for the following types buy
+//! The core of this crate is the [`Delay`] trait, and it is implemented for the following types by
 //! enabling the corresponding features:
 //! 
 //! | Type | Feature | Target Arch |
